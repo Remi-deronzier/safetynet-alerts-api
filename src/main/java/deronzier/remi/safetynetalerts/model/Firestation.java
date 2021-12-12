@@ -3,7 +3,7 @@ package deronzier.remi.safetynetalerts.model;
 import lombok.Data;
 
 @Data
-public class Firestation {
+public class FireStation {
 
 	private String address;
 	private String station;

@@ -11,17 +11,17 @@ import com.fasterxml.jackson.databind.DatabindException;
 
 import deronzier.remi.safetynetalerts.model.FireStation;
 import deronzier.remi.safetynetalerts.repository.FireStationRepository;
-import lombok.Data;
 
-@Data
 @Service
 public class FireStationService {
 
 	@Autowired
-	private FireStationRepository firestationRepository;
+	private FireStationRepository<FireStation> firestationRepository;
 
 	public List<FireStation> getFireStations() throws StreamReadException, DatabindException, IOException {
-		return firestationRepository.getFireStations();
+		List<FireStation> fireStations = firestationRepository.getFireStations("firestations");
+		System.out.println(fireStations.get(0) instanceof FireStation);
+		return fireStations;
 	}
 
 }

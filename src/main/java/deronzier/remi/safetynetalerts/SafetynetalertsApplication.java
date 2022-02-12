@@ -5,15 +5,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import deronzier.remi.safetynetalerts.service.FireStationService;
+import deronzier.remi.safetynetalerts.repository.ResourceRepository;
 
 @SpringBootApplication
 public class SafetynetalertsApplication implements CommandLineRunner {
 
-//	@Autowired
-//	private AllResourceService allResourceService;
 	@Autowired
-	private FireStationService fireStationService;
+	private ResourceRepository repository;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SafetynetalertsApplication.class, args);
@@ -21,7 +19,7 @@ public class SafetynetalertsApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		fireStationService.getFireStations();
+		repository.getResources();
 	}
 
 }

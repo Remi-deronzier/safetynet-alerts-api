@@ -1,19 +1,16 @@
 package deronzier.remi.safetynetalerts.model;
 
-import java.io.Serializable;
-
 import lombok.Data;
 
 @Data
-public class Person implements Serializable {
+public class Person {
 
-	private static final long serialVersionUID = 1L;
-	private final String firstName;
-	private final String lastName;
-	private final String address;
-	private final String city;
-	private final String zip;
-	private final String phone;
-	private final String email;
+	private String firstName;
+	private String lastName;
+	private String address;
+	private String city;
+	private String zip;
+	private String phone;
+	private String email;
 
 }

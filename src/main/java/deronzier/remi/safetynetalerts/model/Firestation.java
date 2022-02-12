@@ -1,13 +1,10 @@
 package deronzier.remi.safetynetalerts.model;
 
-import java.io.Serializable;
-
 import lombok.Data;
 
 @Data
-public class FireStation implements Serializable {
+public class FireStation {
 
-	private static final long serialVersionUID = 1L;
 	private String address;
 	private String station;
 

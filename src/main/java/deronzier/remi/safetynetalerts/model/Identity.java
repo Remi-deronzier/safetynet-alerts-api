@@ -3,9 +3,9 @@ package deronzier.remi.safetynetalerts.model;
 import lombok.Data;
 
 @Data
-public class FireStation {
+public abstract class Identity {
 
-	private String address;
-	private String station;
+	String firstName;
+	String lastName;
 
 }

@@ -1,7 +1,6 @@
 package deronzier.remi.safetynetalerts.service;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,13 +10,15 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
-
-import deronzier.remi.safetynetalerts.model.FireStation;
-import deronzier.remi.safetynetalerts.model.MedicalRecord;
-import deronzier.remi.safetynetalerts.model.Person;
+import deronzier.remi.safetynetalerts.exception.AddressNotFound;
+import deronzier.remi.safetynetalerts.exception.person.PersonAlreadyExistsException;
+import deronzier.remi.safetynetalerts.exception.person.PersonNotFoundException;
+import deronzier.remi.safetynetalerts.model.firestation.FireStation;
+import deronzier.remi.safetynetalerts.model.medicalrecord.MedicalRecord;
+import deronzier.remi.safetynetalerts.model.person.Person;
 import deronzier.remi.safetynetalerts.repository.ResourceRepository;
+import deronzier.remi.safetynetalerts.utils.FindObject;
+import deronzier.remi.safetynetalerts.utils.Helpers;
 
 @Service
 public class PersonService {
@@ -25,14 +26,10 @@ public class PersonService {
 	private ResourceRepository resourceRepository;
 	@Autowired
 	private Helpers helpers;
+	@Autowired
+	private FindObject<Person> findObject;
 
-	SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
-
-	public List<Person> getPersons() throws StreamReadException, DatabindException, IOException {
-		return resourceRepository.getPersons();
-	}
-
-	public Map<String, Object> getPersonsCoveredFireStation(final String stationId) {
+	public Map<String, Object> getPersonsCoveredFireStation(final int stationId) {
 		Map<String, Integer> counters = new HashMap<>();
 		counters.put("childrenCounter", 0);
 		counters.put("adultCounter", 0);
@@ -41,7 +38,7 @@ public class PersonService {
 		List<MedicalRecord> medicalRecords = resourceRepository.getMedicalRecords();
 		List<FireStation> filteredFireStations = fireStations
 				.stream()
-				.filter(firestation -> firestation.getStation().equals(stationId))
+				.filter(firestation -> firestation.getStation() == stationId)
 				.collect(Collectors.toList());
 		List<String> addressesToSearch = filteredFireStations
 				.stream()
@@ -61,12 +58,12 @@ public class PersonService {
 		return res;
 	}
 
-	public List<String> getPersonsPhoneNumberCoveredFireStation(final String stationId) {
+	public List<String> getPersonsPhoneNumberCoveredFireStation(final int stationId) {
 		List<Person> persons = resourceRepository.getPersons();
 		List<FireStation> fireStations = resourceRepository.getFireStations();
 		List<FireStation> filteredFireStations = fireStations
 				.stream()
-				.filter(firestation -> firestation.getStation().equals(stationId))
+				.filter(firestation -> firestation.getStation() == stationId)
 				.collect(Collectors.toList());
 		List<String> addressesToSearch = filteredFireStations
 				.stream()
@@ -103,13 +100,13 @@ public class PersonService {
 		res.put("firstName", person.getFirstName());
 		res.put("lastName", person.getLastName());
 		MedicalRecord medicalRecord = helpers.getMedicalRecord(person, medicalRecords);
-		res.put("age", String.valueOf(helpers.getAge(medicalRecord.getBirthdate())));
+		res.put("age", helpers.getAge(medicalRecord.getBirthdate()));
 		res.put("medications", medicalRecord.getMedications());
 		res.put("allergies", medicalRecord.getAllergies());
 		return res;
 	}
 
-	public Map<String, Object> getPersonsSpecificAddress(final String address) {
+	public Map<String, Object> getPersonsSpecificAddress(final String address) throws AddressNotFound {
 		List<Person> persons = resourceRepository.getPersons();
 		List<FireStation> fireStations = resourceRepository.getFireStations();
 		List<MedicalRecord> medicalRecords = resourceRepository.getMedicalRecords();
@@ -122,9 +119,9 @@ public class PersonService {
 				.stream()
 				.filter(fireStation -> fireStation.getAddress().equals(address))
 				.findFirst();
-		String fireStationNumber;
+		int fireStationNumber;
 		if (fireStationNumberOptional.isEmpty()) {
-			return helpers.buildErrorMessage();
+			throw new AddressNotFound("No such address");
 		} else {
 			fireStationNumber = fireStationNumberOptional.get().getStation();
 		}
@@ -149,7 +146,7 @@ public class PersonService {
 		res.put("lastName", person.getLastName());
 		res.put("address", person.getAddress());
 		MedicalRecord medicalRecord = helpers.getMedicalRecord(person, medicalRecords);
-		res.put("age", String.valueOf(helpers.getAge(medicalRecord.getBirthdate())));
+		res.put("age", helpers.getAge(medicalRecord.getBirthdate()));
 		res.put("email", person.getEmail());
 		res.put("medications", medicalRecord.getMedications());
 		return res;
@@ -160,11 +157,62 @@ public class PersonService {
 		List<MedicalRecord> medicalRecords = resourceRepository.getMedicalRecords();
 		List<Object> res = persons
 				.stream()
-				.filter(person -> person.getFirstName().equals(firstName) && person.getLastName().equals(lastName))
+				.filter(person -> findObject.findPerson(firstName, lastName, person))
 				.map(person -> populatePersonInfo(person, medicalRecords))
 				.collect(Collectors.toList());
 		return res;
 
+	}
+
+	// CRUD
+
+	public Person save(Person newPerson) throws IOException, PersonAlreadyExistsException {
+		List<Person> persons = resourceRepository.getPersons();
+		List<FireStation> fireStations = resourceRepository.getFireStations();
+		List<MedicalRecord> medicalRecords = resourceRepository.getMedicalRecords();
+		String firstName = newPerson.getFirstName();
+		String lastName = newPerson.getLastName();
+		Person potentialPerson = findObject.findPerson(firstName, lastName, persons);
+		if (potentialPerson != null) {
+			throw new PersonAlreadyExistsException("Person already exists in DB");
+		}
+		persons.add(newPerson);
+		resourceRepository.writeResources(persons, fireStations, medicalRecords);
+		return newPerson;
+	}
+
+	public List<Person> findAll() {
+		return resourceRepository.getPersons();
+	}
+
+	public Person update(Person person, String firstName, String lastName) throws IOException, PersonNotFoundException {
+		List<Person> persons = resourceRepository.getPersons();
+		List<FireStation> fireStations = resourceRepository.getFireStations();
+		List<MedicalRecord> medicalRecords = resourceRepository.getMedicalRecords();
+		int index = findObject.indexOfPerson(firstName, lastName, persons);
+		if (index == -1) {
+			throw new PersonNotFoundException("Person not found");
+		} else {
+			Person personToUpdate = findObject.findPerson(firstName, lastName, persons);
+			person.setFirstName(personToUpdate.getFirstName());
+			person.setLastName(personToUpdate.getLastName());
+			persons.set(index, person);
+			resourceRepository.writeResources(persons, fireStations, medicalRecords);
+			return person;
+		}
+	}
+
+	public String delete(String firstName, String lastName) throws IOException, PersonNotFoundException {
+		List<Person> persons = resourceRepository.getPersons();
+		List<FireStation> fireStations = resourceRepository.getFireStations();
+		List<MedicalRecord> medicalRecords = resourceRepository.getMedicalRecords();
+		Person personToDelete = findObject.findPerson(firstName, lastName, persons);
+		if (personToDelete == null) {
+			throw new PersonNotFoundException("Person not found");
+		}
+		persons.remove(personToDelete);
+		resourceRepository.writeResources(persons, fireStations, medicalRecords);
+		return firstName + " " + lastName + " successfully deleted";
 	}
 
 }

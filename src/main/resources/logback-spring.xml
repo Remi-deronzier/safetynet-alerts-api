@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="LOGS" value="./logs" />
+
+    <appender name="Console"
+        class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <appender name="RollingFile"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOGS}/safety-net-alerts-logger.log</file>
+        <encoder
+            class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d %p %C{1.} [%t] %m%n</Pattern>
+        </encoder>
+
+        <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily and when the file reaches 10 MegaBytes -->
+            <fileNamePattern>${LOGS}/archived/safety-net-alerts-logger-%d{yyyy-MM-dd}.%i.log
+            </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+    
+    <springProfile name="local | dev">
+	    <!-- LOG everything at INFO level -->
+	    <root level="info">
+	        <appender-ref ref="Console" />
+	    </root>
+    
+	    <!-- LOG "deronzier.remi*" at DEBUG level -->
+	    <logger name="deronzier.remi" level="debug" additivity="false">
+	        <appender-ref ref="Console" />
+	    </logger>
+	    
+	    <!-- LOG "org.springframework.boot.web.embedded.tomcat*" at INFO level -->
+	    <logger name="org.springframework.boot.web.embedded.tomcat" level="info" additivity="false">
+	        <appender-ref ref="Console" />
+	    </logger>
+    </springProfile>
+    
+	<springProfile name="prod">
+	    <!-- LOG everything at INFO level -->
+	    <root level="info">
+	        <appender-ref ref="RollingFile" />
+	    </root>
+	</springProfile>
+
+
+
+</configuration>

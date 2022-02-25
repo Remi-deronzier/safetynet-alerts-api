@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -23,22 +25,26 @@ import deronzier.remi.safetynetalerts.model.person.Person;
 @Repository
 public class ResourceRepository {
 
-	private List<FireStation> fireStations = new ArrayList<>();
-	private List<Person> persons = new ArrayList<>();
-	private List<MedicalRecord> medicalRecords = new ArrayList<>();
-	ObjectMapper objectMapper = new ObjectMapper();
-	String path = "src/main/resources/data.json";
+	private final List<FireStation> fireStations = new ArrayList<>();
+	private final List<Person> persons = new ArrayList<>();
+	private final List<MedicalRecord> medicalRecords = new ArrayList<>();
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
+	@Value("${sp.init.filepath.data}")
+	private String path;
 
 	public List<FireStation> getFireStations() {
-		return new ArrayList<FireStation>(fireStations);
+		return fireStations;
 	}
 
 	public List<Person> getPersons() {
-		return new ArrayList<Person>(persons);
+		return persons;
 	}
 
 	public List<MedicalRecord> getMedicalRecords() {
-		return new ArrayList<MedicalRecord>(medicalRecords);
+		return medicalRecords;
 	}
 
 	public void getResources() throws IOException {

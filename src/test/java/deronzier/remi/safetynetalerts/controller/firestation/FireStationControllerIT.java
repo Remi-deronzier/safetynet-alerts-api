@@ -29,7 +29,7 @@ import deronzier.remi.safetynetalerts.utils.FileTestManagement;
 @SpringBootTest(properties = { "sp.init.filepath.data=src/main/resources/static/test/data-test.json" })
 @AutoConfigureMockMvc
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class FireStationControllerITest {
+public class FireStationControllerIT {
 
 	@Autowired
 	private MockMvc mockMvc;

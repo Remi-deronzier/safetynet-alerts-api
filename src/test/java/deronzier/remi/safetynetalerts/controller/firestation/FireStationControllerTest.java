@@ -43,9 +43,9 @@ public class FireStationControllerTest {
 
 	static final private List<FireStation> fireStations = new ArrayList<>();
 	static final private List<Object> floodPeople = new ArrayList<>();
-	static final private FireStation validFireStation = new FireStation();
+	static final private FireStation validFireStationForPostMethod = new FireStation();
 	static final private FireStation fireStationWithNullStationField = new FireStation();
-	static final private FireStation fireStationWithNullAddressField = new FireStation();
+	static final private FireStation validFireStationForPutMethod = new FireStation();
 
 	@BeforeAll
 	public static void setUp() {
@@ -53,19 +53,19 @@ public class FireStationControllerTest {
 		floodPeople.add(new HashMap<>());
 
 		// Valid input
-		validFireStation.setAddress("address test bis");
-		validFireStation.setStation(7);
+		validFireStationForPostMethod.setAddress("address test bis");
+		validFireStationForPostMethod.setStation(7);
 
 		// Station number is null
 		fireStationWithNullStationField.setAddress("address test bis");
 
 		// Station address is null
-		fireStationWithNullAddressField.setStation(7);
+		validFireStationForPutMethod.setStation(7);
 
 	}
 
 	@Test
-	public void testFindAll_whenNoFireStations_thenReturnNotFound() throws Exception {
+	public void testFindAll_whenNoFireStations_thenReturn404() throws Exception {
 
 		mockMvc.perform(get("/firestations"))
 				.andExpect(status().isNotFound());
@@ -97,12 +97,12 @@ public class FireStationControllerTest {
 		mockMvc.perform(
 				post("/firestations")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(validFireStation)))
+						.content(mapper.writeValueAsString(validFireStationForPostMethod)))
 				.andExpect(status().isCreated());
 	}
 
 	@Test
-	public void tesCreate_whenNullValue_thenReturns400() throws Exception {
+	public void tesCreate_whenNullValue_thenReturn400() throws Exception {
 
 		mockMvc.perform(
 				post("/firestations")
@@ -128,21 +128,21 @@ public class FireStationControllerTest {
 	}
 
 	@Test
-	public void testUpdate_whenNotNullAddress_thenReturns400() throws Exception {
+	public void testUpdate() throws Exception {
 
 		mockMvc.perform(put("/firestations")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(fireStationWithNullAddressField))
+				.content(mapper.writeValueAsString(validFireStationForPutMethod))
 				.param("address", "address test"))
 				.andExpect(status().isOk());
 	}
 
 	@Test
-	public void testUpdate() throws Exception {
+	public void testUpdate_whenNotNullAddress_thenReturn400() throws Exception {
 
 		mockMvc.perform(put("/firestations")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validFireStation))
+				.content(mapper.writeValueAsString(validFireStationForPostMethod))
 				.param("address", "address test"))
 				.andExpect(status().isBadRequest());
 

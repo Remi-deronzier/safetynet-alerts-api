@@ -98,7 +98,7 @@ public class MedicalRecordService {
 		return newMedicalRecord;
 	}
 
-	public List<MedicalRecord> finAll() {
+	public List<MedicalRecord> findAll() {
 		return resourceRepository.getMedicalRecords();
 	}
 

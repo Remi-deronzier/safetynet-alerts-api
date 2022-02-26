@@ -1,13 +1,5 @@
 {
   "persons" : [ {
-    "firstName" : "John",
-    "lastName" : "Boyd",
-    "address" : "1509 Culver St",
-    "city" : "Culver",
-    "zip" : "97451",
-    "phone" : "841-874-6512",
-    "email" : "jaboyd@email.com"
-  }, {
     "firstName" : "Jacob",
     "lastName" : "Boyd",
     "address" : "1509 Culver St",
@@ -183,13 +175,29 @@
     "zip" : "97451",
     "phone" : "841-874-7458",
     "email" : "gramps@email.com"
+  }, {
+    "firstName" : "John",
+    "lastName" : "Doe",
+    "address" : "address",
+    "city" : "Paris",
+    "zip" : "75000",
+    "phone" : "0606060606",
+    "email" : "test@gmail.com"
+  }, {
+    "firstName" : "Robert",
+    "lastName" : "Doe",
+    "address" : "address",
+    "city" : "Paris",
+    "zip" : "75000",
+    "phone" : "0606060606",
+    "email" : "test@gmail.com"
   } ],
   "firestations" : [ {
     "address" : "29 15th St",
     "station" : 2
   }, {
     "address" : "834 Binoc Ave",
-    "station" : 3
+    "station" : 7
   }, {
     "address" : "748 Townings Dr",
     "station" : 3

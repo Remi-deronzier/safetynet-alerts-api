@@ -4,14 +4,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -27,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import deronzier.remi.safetynetalerts.model.firestation.FireStation;
+import deronzier.remi.safetynetalerts.utils.FileTestManagement;
 
 @SpringBootTest(properties = { "sp.init.filepath.data=src/main/resources/static/test/data-test.json" })
 @AutoConfigureMockMvc
@@ -40,36 +38,24 @@ public class FireStationControllerITest {
 	private ObjectMapper mapper;
 
 	// Initialize a valid fire station
-	static FireStation validFireStation = new FireStation();
-
-	// Define 2 test files
-	static final private File source = new File("src/main/resources/static/test/data-not-modified.json");
-	static final private File dest = new File("src/main/resources/static/test/data-test.json");
+	static final private FireStation validFireStationForPostMethod = new FireStation();
+	static final private FireStation fireStationWithNullStationField = new FireStation();
+	static final private FireStation validFireStationForPutMethod = new FireStation();
 
 	@BeforeAll
 	public static void setUp() throws IOException {
-		// Valid input
-		validFireStation.setAddress("address test");
-		validFireStation.setStation(7);
+		// Valid fire station for post method
+		validFireStationForPostMethod.setAddress("address test");
+		validFireStationForPostMethod.setStation(7);
+
+		// Station number is null
+		fireStationWithNullStationField.setAddress("address test bis");
+
+		// Valid fire station for put method
+		validFireStationForPutMethod.setStation(7);
 
 		// Reset data
-		resetDataFile();
-	}
-
-	@SuppressWarnings("resource")
-	static void resetDataFile() throws IOException {
-		FileChannel sourceChannel = null;
-		FileChannel destChannel = null;
-
-		try {
-			sourceChannel = new FileInputStream(source).getChannel();
-			destChannel = new FileOutputStream(dest).getChannel();
-			destChannel.transferFrom(sourceChannel, 0, sourceChannel.size());
-		} finally {
-			sourceChannel.close();
-			destChannel.close();
-		}
-
+		FileTestManagement.resetDataFile();
 	}
 
 	@Test
@@ -97,13 +83,47 @@ public class FireStationControllerITest {
 		mockMvc.perform(
 				post("/firestations")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(validFireStation)))
+						.content(mapper.writeValueAsString(validFireStationForPostMethod)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.address", is("address test")));
 	}
 
 	@Test
 	@Order(4)
+	public void tesCreate_whenNullValue_thenReturn400() throws Exception {
+
+		mockMvc.perform(
+				post("/firestations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(fireStationWithNullStationField)))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Order(5)
+	public void testUpdate() throws Exception {
+
+		mockMvc.perform(put("/firestations")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(validFireStationForPutMethod))
+				.param("address", "834 Binoc Ave"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@Order(6)
+	public void testUpdate_whenNotNullAddress_thenReturn400() throws Exception {
+
+		mockMvc.perform(put("/firestations")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(validFireStationForPostMethod))
+				.param("address", "834 Binoc Ave"))
+				.andExpect(status().isBadRequest());
+
+	}
+
+	@Test
+	@Order(7)
 	public void testDeleteByStationNumber() throws Exception {
 
 		mockMvc.perform(delete("/firestations/delete-by-station-number")
@@ -112,7 +132,7 @@ public class FireStationControllerITest {
 	}
 
 	@Test
-	@Order(5)
+	@Order(8)
 	public void testDeleteByAddress() throws Exception {
 
 		mockMvc.perform(delete("/firestations/delete-by-address")

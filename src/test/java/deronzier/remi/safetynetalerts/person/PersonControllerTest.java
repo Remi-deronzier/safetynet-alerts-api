@@ -84,7 +84,7 @@ public class PersonControllerTest {
 	}
 
 	@Test
-	public void testGetPersonsCoveredFireStation_whenNoPersons_thenReturnNotFound() throws Exception {
+	public void testGetPersonsCoveredFireStation_whenNoPersons_thenReturn404() throws Exception {
 		when(personService.getPersonsCoveredFireStation(3))
 				.thenReturn(personsCoveredWithEmptyValues);
 
@@ -93,7 +93,7 @@ public class PersonControllerTest {
 	}
 
 	@Test
-	public void testGetPersonsCoveredFireStation_whenStationNumberIsNegative_thenReturnBadRequest() throws Exception {
+	public void testGetPersonsCoveredFireStation_whenStationNumberIsNegative_thenReturn400() throws Exception {
 		when(personService.getPersonsCoveredFireStation(-1))
 				.thenReturn(personsCovered);
 
@@ -140,7 +140,7 @@ public class PersonControllerTest {
 	}
 
 	@Test
-	public void testFindAll_whenNoPersons_thenReturnNotFound() throws Exception {
+	public void testFindAll_whenNoPersons_thenReturn404() throws Exception {
 
 		mockMvc.perform(get("/persons"))
 				.andExpect(status().isNotFound());
@@ -167,7 +167,7 @@ public class PersonControllerTest {
 	}
 
 	@Test
-	public void tesCreate_whenNullValue_thenReturns400() throws Exception {
+	public void tesCreate_whenNullValue_thenReturn400() throws Exception {
 
 		mockMvc.perform(
 				post("/persons")
@@ -197,7 +197,7 @@ public class PersonControllerTest {
 	}
 
 	@Test
-	public void testUpdate_whenNotNullFirstName_thenReturns400() throws Exception {
+	public void testUpdate_whenNotNullFirstName_thenReturn400() throws Exception {
 
 		mockMvc.perform(put("/persons")
 				.contentType(MediaType.APPLICATION_JSON)

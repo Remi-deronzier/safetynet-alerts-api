@@ -64,10 +64,10 @@ public class MedicalRecordController {
 	 */
 	@GetMapping("/medical-records")
 	public List<MedicalRecord> findAll() {
-		if (medicalRecordService.finAll().isEmpty()) {
+		if (medicalRecordService.findAll().isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No medical record found");
 		}
-		return medicalRecordService.finAll();
+		return medicalRecordService.findAll();
 	}
 
 	/**

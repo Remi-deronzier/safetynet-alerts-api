@@ -1,4 +1,4 @@
-package deronzier.remi.safetynetalerts.controller.firestation;
+package deronzier.remi.safetynetalerts.firestation;
 
 import java.util.ArrayList;
 import java.util.HashMap;

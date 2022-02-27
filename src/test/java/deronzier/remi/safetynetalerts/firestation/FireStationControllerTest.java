@@ -1,4 +1,4 @@
-package deronzier.remi.safetynetalerts.controller.firestation;
+package deronzier.remi.safetynetalerts.firestation;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;

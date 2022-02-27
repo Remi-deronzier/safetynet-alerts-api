@@ -7,9 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.io.IOException;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -22,7 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import deronzier.remi.safetynetalerts.controller.FireStationController;
-import deronzier.remi.safetynetalerts.model.firestation.FireStation;
+import deronzier.remi.safetynetalerts.exception.firestation.FireStationAlreadyExistsException;
+import deronzier.remi.safetynetalerts.exception.firestation.FireStationNotFoundException;
 import deronzier.remi.safetynetalerts.repository.ResourceRepository;
 import deronzier.remi.safetynetalerts.service.FireStationService;
 
@@ -41,31 +40,14 @@ public class FireStationControllerTest {
 	@Autowired
 	private ObjectMapper mapper;
 
-	static final private List<FireStation> fireStations = new ArrayList<>();
-	static final private List<Object> floodPeople = new ArrayList<>();
-	static final private FireStation validFireStationForPostMethod = new FireStation();
-	static final private FireStation fireStationWithNullStationField = new FireStation();
-	static final private FireStation validFireStationForPutMethod = new FireStation();
-
 	@BeforeAll
 	public static void setUp() {
-		fireStations.add(new FireStation());
-		floodPeople.add(new HashMap<>());
-
-		// Valid input
-		validFireStationForPostMethod.setAddress("address test bis");
-		validFireStationForPostMethod.setStation(7);
-
-		// Station number is null
-		fireStationWithNullStationField.setAddress("address test bis");
-
-		// Station address is null
-		validFireStationForPutMethod.setStation(7);
-
+		// Set up data for tests
+		FireStationTestData.setUp();
 	}
 
 	@Test
-	public void testFindAll_whenNoFireStations_thenReturn404() throws Exception {
+	public void testFindAll_whenNoFireStation_thenReturn404() throws Exception {
 
 		mockMvc.perform(get("/firestations"))
 				.andExpect(status().isNotFound());
@@ -75,7 +57,7 @@ public class FireStationControllerTest {
 	public void testFindAll() throws Exception {
 
 		when(fireStationService.findAll())
-				.thenReturn(fireStations);
+				.thenReturn(FireStationTestData.ALL_FIRE_STATIONS);
 
 		mockMvc.perform(get("/firestations"))
 				.andExpect(status().isOk());
@@ -85,10 +67,17 @@ public class FireStationControllerTest {
 	public void testGetFloodPersons() throws Exception {
 
 		when(fireStationService.getFloodPersons(new int[] { 1, 2 }))
-				.thenReturn(floodPeople);
+				.thenReturn(FireStationTestData.PEOPLE_IMPACTED_BY_FLOOD);
 
 		mockMvc.perform(get("/flood/stations").param("stations", "1,2"))
 				.andExpect(status().isOk());
+	}
+
+	@Test
+	public void testGetFloodPersons_whenNoPerson_thenReturn404() throws Exception {
+
+		mockMvc.perform(get("/flood/stations").param("stations", "1,2"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -97,7 +86,7 @@ public class FireStationControllerTest {
 		mockMvc.perform(
 				post("/firestations")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(validFireStationForPostMethod)))
+						.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_POST_METHOD)))
 				.andExpect(status().isCreated());
 	}
 
@@ -107,8 +96,34 @@ public class FireStationControllerTest {
 		mockMvc.perform(
 				post("/firestations")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(fireStationWithNullStationField)))
+						.content(mapper.writeValueAsString(FireStationTestData.FIRE_STATION_EMPTY_STATION_NUMBER)))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	public void tesCreate_whenFireStationAlreadyExist_thenReturn409() throws Exception {
+
+		when(fireStationService.save(FireStationTestData.VALID_FIRE_STATION_POST_METHOD))
+				.thenThrow(new FireStationAlreadyExistsException("Fire station already exists in DB"));
+
+		mockMvc.perform(
+				post("/firestations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_POST_METHOD)))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	public void tesCreate_whenWritingProblemInTheFile_thenReturn500() throws Exception {
+
+		when(fireStationService.save(FireStationTestData.VALID_FIRE_STATION_POST_METHOD))
+				.thenThrow(new IOException());
+
+		mockMvc.perform(
+				post("/firestations")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_POST_METHOD)))
+				.andExpect(status().isInternalServerError());
 	}
 
 	@Test
@@ -120,6 +135,26 @@ public class FireStationControllerTest {
 	}
 
 	@Test
+	public void testDeleteByStation_whenWritingProblemInTheFile_thenReturn500() throws Exception {
+
+		when(fireStationService.deleteByNumber(1)).thenThrow(new IOException());
+
+		mockMvc.perform(delete("/firestations/delete-by-station-number")
+				.param("stationNumber", "1"))
+				.andExpect(status().isInternalServerError());
+	}
+
+	@Test
+	public void testDeleteByStationNumber_whenNoFireStation_thenReturn404() throws Exception {
+
+		when(fireStationService.deleteByNumber(1)).thenThrow(new FireStationNotFoundException());
+
+		mockMvc.perform(delete("/firestations/delete-by-station-number")
+				.param("stationNumber", "1"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
 	public void testDeleteByAddress() throws Exception {
 
 		mockMvc.perform(delete("/firestations/delete-by-address")
@@ -128,11 +163,31 @@ public class FireStationControllerTest {
 	}
 
 	@Test
+	public void testDeleteByAddress_whenWritingProblemInTheFile_thenReturn500() throws Exception {
+
+		when(fireStationService.deleteByAddress("address test")).thenThrow(new IOException());
+
+		mockMvc.perform(delete("/firestations/delete-by-address")
+				.param("address", "address test"))
+				.andExpect(status().isInternalServerError());
+	}
+
+	@Test
+	public void testDeleteByAddress_whenNoFireStation_thenReturn404() throws Exception {
+
+		when(fireStationService.deleteByAddress("address test")).thenThrow(new FireStationNotFoundException());
+
+		mockMvc.perform(delete("/firestations/delete-by-address")
+				.param("address", "address test"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
 	public void testUpdate() throws Exception {
 
 		mockMvc.perform(put("/firestations")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validFireStationForPutMethod))
+				.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_PUT_METHOD))
 				.param("address", "address test"))
 				.andExpect(status().isOk());
 	}
@@ -142,9 +197,48 @@ public class FireStationControllerTest {
 
 		mockMvc.perform(put("/firestations")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validFireStationForPostMethod))
+				.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_POST_METHOD))
 				.param("address", "address test"))
 				.andExpect(status().isBadRequest());
+
+	}
+
+	@Test
+	public void testUpdate_whenNegativeFireStationNumber_thenReturn400() throws Exception {
+
+		mockMvc.perform(put("/firestations")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(FireStationTestData.FIRE_STATION_NEGATIVE_STATION_NUMBER))
+				.param("address", "address test"))
+				.andExpect(status().isBadRequest());
+
+	}
+
+	@Test
+	public void testUpdate_whenNoFireStation_thenReturn404() throws Exception {
+
+		when(fireStationService.update(FireStationTestData.VALID_FIRE_STATION_PUT_METHOD, "address test"))
+				.thenThrow(new FireStationNotFoundException());
+
+		mockMvc.perform(put("/firestations")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_PUT_METHOD))
+				.param("address", "address test"))
+				.andExpect(status().isNotFound());
+
+	}
+
+	@Test
+	public void testUpdate_whenWritingProblemInTheFile_thenReturn500() throws Exception {
+
+		when(fireStationService.update(FireStationTestData.VALID_FIRE_STATION_PUT_METHOD, "address test"))
+				.thenThrow(new IOException());
+
+		mockMvc.perform(put("/firestations")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_PUT_METHOD))
+				.param("address", "address test"))
+				.andExpect(status().isInternalServerError());
 
 	}
 

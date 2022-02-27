@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import deronzier.remi.safetynetalerts.model.person.Person;
 import deronzier.remi.safetynetalerts.utils.FileTestManagement;
 
 @SpringBootTest(properties = { "sp.init.filepath.data=src/main/resources/static/test/data-test.json" })
@@ -37,26 +36,10 @@ public class PersonControllerIT {
 	@Autowired
 	private ObjectMapper mapper;
 
-	private static final Person personValidForPostMethod = new Person();
-	private static final Person personValidForPutMethod = new Person();
-	private static final Person personInvalid = new Person();
-
 	@BeforeAll
 	public static void setUp() throws IOException {
-		// Initialize test data
-		personValidForPostMethod.setAddress("address");
-		personValidForPostMethod.setFirstName("John");
-		personValidForPostMethod.setLastName("Doe");
-		personValidForPostMethod.setCity("Paris");
-		personValidForPostMethod.setZip("75000");
-		personValidForPostMethod.setPhone("0606060606");
-		personValidForPostMethod.setEmail("test@gmail.com");
-
-		personValidForPutMethod.setAddress("address");
-		personValidForPutMethod.setCity("Paris");
-		personValidForPutMethod.setZip("75000");
-		personValidForPutMethod.setPhone("0606060606");
-		personValidForPutMethod.setEmail("test@gmail.com");
+		// Prepare data for tests
+		PersonTestData.setUp();
 
 		// Reset data
 		FileTestManagement.resetDataFile();
@@ -74,7 +57,7 @@ public class PersonControllerIT {
 
 	@Test
 	@Order(2)
-	public void testGetPersonsCoveredFireStation_whenNoPersons_thenReturnNotFound() throws Exception {
+	public void testGetPersonsCoveredFireStation_whenNoPerson_thenReturn404() throws Exception {
 
 		mockMvc.perform(get("/firestation").param("stationNumber", "10"))
 				.andExpect(status().isNotFound());
@@ -148,7 +131,7 @@ public class PersonControllerIT {
 		mockMvc.perform(
 				post("/persons")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(personValidForPostMethod)))
+						.content(mapper.writeValueAsString(PersonTestData.VALID_PERSON_POST_METHOD)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.['firstName']", is("John")))
 				.andExpect(jsonPath("$.['address']", is("address")));
@@ -161,7 +144,7 @@ public class PersonControllerIT {
 		mockMvc.perform(
 				post("/persons")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(personInvalid)))
+						.content(mapper.writeValueAsString(PersonTestData.EMPTY_PERSON)))
 				.andExpect(status().isBadRequest());
 	}
 
@@ -171,7 +154,7 @@ public class PersonControllerIT {
 
 		mockMvc.perform(put("/persons")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(personValidForPutMethod))
+				.content(mapper.writeValueAsString(PersonTestData.VALID_PERSON_PUT_METHOD))
 				.param("firstName", "John")
 				.param("lastName", "Boyd"))
 				.andExpect(status().isOk());
@@ -179,11 +162,11 @@ public class PersonControllerIT {
 
 	@Test
 	@Order(12)
-	public void testUpdate_whenNotNullFirstName_thenReturn400() throws Exception {
+	public void testUpdate_whenAllFieldsNull_thenReturn400() throws Exception {
 
 		mockMvc.perform(put("/persons")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(personInvalid))
+				.content(mapper.writeValueAsString(PersonTestData.EMPTY_PERSON))
 				.param("firstName", "John")
 				.param("lastName", "Boyd"))
 				.andExpect(status().isBadRequest());
@@ -196,7 +179,7 @@ public class PersonControllerIT {
 
 		mockMvc.perform(put("/persons")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(personValidForPutMethod))
+				.content(mapper.writeValueAsString(PersonTestData.VALID_PERSON_PUT_METHOD))
 				.param("firstName", "James")
 				.param("lastName", "Doe"))
 				.andExpect(status().isNotFound());
@@ -209,7 +192,7 @@ public class PersonControllerIT {
 
 		mockMvc.perform(delete("/persons")
 				.param("firstName", "John")
-				.param("lastName", "Boyd"))
+				.param("lastName", "Doe"))
 				.andExpect(status().isOk());
 	}
 }

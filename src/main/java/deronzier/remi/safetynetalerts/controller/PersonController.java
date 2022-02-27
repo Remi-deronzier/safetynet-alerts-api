@@ -87,7 +87,7 @@ public class PersonController {
 			}
 			return personService.getPersonsSpecificAddress(address);
 		} catch (AddressNotFound anf) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, anf.getMessage());
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, anf.getMessage());
 		}
 	}
 

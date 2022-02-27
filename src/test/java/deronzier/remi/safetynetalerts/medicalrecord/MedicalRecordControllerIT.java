@@ -9,10 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -27,8 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import deronzier.remi.safetynetalerts.model.medicalrecord.MedicalRecord;
-import deronzier.remi.safetynetalerts.model.person.Person;
+import deronzier.remi.safetynetalerts.person.PersonTestData;
 import deronzier.remi.safetynetalerts.utils.FileTestManagement;
 
 @SpringBootTest(properties = { "sp.init.filepath.data=src/main/resources/static/test/data-test.json" })
@@ -42,47 +37,11 @@ public class MedicalRecordControllerIT {
 	@Autowired
 	private ObjectMapper mapper;
 
-	static final private MedicalRecord validMedicalRecordForPostMethod = new MedicalRecord();
-	static final private MedicalRecord validMedicalRecordForPutMethod = new MedicalRecord();
-	static final private MedicalRecord invalidMedicalRecord = new MedicalRecord();
-	static final private MedicalRecord invalidMedicalRecordNoMedications = new MedicalRecord();
-
-	private static final Person personValidForPostMethod = new Person();
-
 	@BeforeAll
 	public static void setUp() throws IOException {
-		// Valid person
-		personValidForPostMethod.setAddress("address");
-		personValidForPostMethod.setFirstName("Robert");
-		personValidForPostMethod.setLastName("Doe");
-		personValidForPostMethod.setCity("Paris");
-		personValidForPostMethod.setZip("75000");
-		personValidForPostMethod.setPhone("0606060606");
-		personValidForPostMethod.setEmail("test@gmail.com");
-
-		// Valid medical record for post method
-		List<String> medications = new ArrayList<>();
-		medications.add("medication1");
-		medications.add("medication2");
-
-		List<String> allergies = new ArrayList<>();
-		allergies.add("allergy1");
-		allergies.add("allergy2");
-
-		validMedicalRecordForPostMethod.setFirstName("Robert");
-		validMedicalRecordForPostMethod.setLastName("Doe");
-		validMedicalRecordForPostMethod.setBirthdate(new GregorianCalendar(2000, Calendar.FEBRUARY, 12).getTime());
-		validMedicalRecordForPostMethod.setMedications(medications);
-		validMedicalRecordForPostMethod.setAllergies(allergies);
-
-		// Valid medical record for put method
-		validMedicalRecordForPutMethod.setBirthdate(new GregorianCalendar(2001, Calendar.FEBRUARY, 11).getTime());
-		validMedicalRecordForPutMethod.setMedications(medications);
-		validMedicalRecordForPutMethod.setAllergies(allergies);
-
-		// Invalid medical record for: no medications
-		invalidMedicalRecordNoMedications.setBirthdate(new GregorianCalendar(2001, Calendar.FEBRUARY, 11).getTime());
-		invalidMedicalRecordNoMedications.setAllergies(allergies);
+		// Prepare data for tests
+		MedicalRecordTestData.setUp();
+		PersonTestData.setUp();
 
 		// Reset data
 		FileTestManagement.resetDataFile();
@@ -124,9 +83,9 @@ public class MedicalRecordControllerIT {
 		mockMvc.perform(
 				post("/persons")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(personValidForPostMethod)))
+						.content(mapper.writeValueAsString(PersonTestData.VALID_PERSON_POST_METHOD)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.['firstName']", is("Robert")))
+				.andExpect(jsonPath("$.['firstName']", is("John")))
 				.andExpect(jsonPath("$.['address']", is("address")));
 	}
 
@@ -137,31 +96,32 @@ public class MedicalRecordControllerIT {
 		mockMvc.perform(
 				post("/medical-records")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(validMedicalRecordForPostMethod)))
+						.content(mapper.writeValueAsString(MedicalRecordTestData.VALID_MEDICAL_RECORD_POST_METHOD)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.firstName", is("Robert")))
-				.andExpect(jsonPath("$.birthdate", is("02/11/2000")));
+				.andExpect(jsonPath("$.firstName", is("John")))
+				.andExpect(jsonPath("$.lastName", is("Doe")))
+				.andExpect(jsonPath("$.birthdate", is("02/10/2014")));
 	}
 
 	@Test
 	@Order(6)
-	public void tesCreate_whenNullValue_thenReturns400() throws Exception {
+	public void tesCreate_whenNullValue_thenReturn400() throws Exception {
 
 		mockMvc.perform(
 				post("/medical-records")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(invalidMedicalRecord)))
+						.content(mapper.writeValueAsString(MedicalRecordTestData.EMPTY_MEDICAL_RECORD)))
 				.andExpect(status().isBadRequest());
 	}
 
 	@Test
 	@Order(7)
-	public void tesCreate_whenMedicalRecordAlreadyCreated_thenReturns409() throws Exception {
+	public void tesCreate_whenMedicalRecordAlreadyCreated_thenReturn409() throws Exception {
 
 		mockMvc.perform(
 				post("/medical-records")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(validMedicalRecordForPostMethod)))
+						.content(mapper.writeValueAsString(MedicalRecordTestData.VALID_MEDICAL_RECORD_POST_METHOD)))
 				.andExpect(status().isConflict());
 	}
 
@@ -171,20 +131,20 @@ public class MedicalRecordControllerIT {
 
 		mockMvc.perform(put("/medical-records")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validMedicalRecordForPostMethod))
-				.param("firstName", "Robert")
+				.content(mapper.writeValueAsString(MedicalRecordTestData.VALID_MEDICAL_RECORD_POST_METHOD))
+				.param("firstName", "John")
 				.param("lastName", "Doe"))
 				.andExpect(status().isBadRequest());
 	}
 
 	@Test
 	@Order(9)
-	public void testUpdate_whenNullMedications_thenReturns400() throws Exception {
+	public void testUpdate_whenNullMedication_thenReturn400() throws Exception {
 
 		mockMvc.perform(put("/medical-records")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(invalidMedicalRecordNoMedications))
-				.param("firstName", "Robert")
+				.content(mapper.writeValueAsString(MedicalRecordTestData.MEDICAL_RECORD_EMPTY_MEDICATIONS))
+				.param("firstName", "John")
 				.param("lastName", "Doe"))
 				.andExpect(status().isBadRequest());
 	}
@@ -195,8 +155,8 @@ public class MedicalRecordControllerIT {
 
 		mockMvc.perform(put("/medical-records")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validMedicalRecordForPutMethod))
-				.param("firstName", "Robert")
+				.content(mapper.writeValueAsString(MedicalRecordTestData.VALID_MEDICAL_RECORD_PUT_METHOD))
+				.param("firstName", "John")
 				.param("lastName", "Doe"))
 				.andExpect(status().isOk());
 
@@ -207,7 +167,7 @@ public class MedicalRecordControllerIT {
 	public void testDelete() throws Exception {
 
 		mockMvc.perform(delete("/medical-records")
-				.param("firstName", "Robert")
+				.param("firstName", "John")
 				.param("lastName", "Doe"))
 				.andExpect(status().isOk());
 	}

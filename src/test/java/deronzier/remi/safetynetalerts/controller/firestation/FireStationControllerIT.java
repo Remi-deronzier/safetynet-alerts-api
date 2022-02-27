@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import deronzier.remi.safetynetalerts.model.firestation.FireStation;
 import deronzier.remi.safetynetalerts.utils.FileTestManagement;
 
 @SpringBootTest(properties = { "sp.init.filepath.data=src/main/resources/static/test/data-test.json" })
@@ -37,24 +36,12 @@ public class FireStationControllerIT {
 	@Autowired
 	private ObjectMapper mapper;
 
-	// Initialize a valid fire station
-	static final private FireStation validFireStationForPostMethod = new FireStation();
-	static final private FireStation fireStationWithNullStationField = new FireStation();
-	static final private FireStation validFireStationForPutMethod = new FireStation();
-
 	@BeforeAll
 	public static void setUp() throws IOException {
-		// Valid fire station for post method
-		validFireStationForPostMethod.setAddress("address test");
-		validFireStationForPostMethod.setStation(7);
+		// Prepare data for tests
+		FireStationTestData.setUp();
 
-		// Station number is null
-		fireStationWithNullStationField.setAddress("address test bis");
-
-		// Valid fire station for put method
-		validFireStationForPutMethod.setStation(7);
-
-		// Reset data
+		// Reset data in test file
 		FileTestManagement.resetDataFile();
 	}
 
@@ -83,7 +70,7 @@ public class FireStationControllerIT {
 		mockMvc.perform(
 				post("/firestations")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(validFireStationForPostMethod)))
+						.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_POST_METHOD)))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.address", is("address test")));
 	}
@@ -95,7 +82,7 @@ public class FireStationControllerIT {
 		mockMvc.perform(
 				post("/firestations")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(mapper.writeValueAsString(fireStationWithNullStationField)))
+						.content(mapper.writeValueAsString(FireStationTestData.FIRE_STATION_EMPTY_STATION_NUMBER)))
 				.andExpect(status().isBadRequest());
 	}
 
@@ -105,7 +92,7 @@ public class FireStationControllerIT {
 
 		mockMvc.perform(put("/firestations")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validFireStationForPutMethod))
+				.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_PUT_METHOD))
 				.param("address", "834 Binoc Ave"))
 				.andExpect(status().isOk());
 	}
@@ -116,7 +103,7 @@ public class FireStationControllerIT {
 
 		mockMvc.perform(put("/firestations")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(mapper.writeValueAsString(validFireStationForPostMethod))
+				.content(mapper.writeValueAsString(FireStationTestData.VALID_FIRE_STATION_POST_METHOD))
 				.param("address", "834 Binoc Ave"))
 				.andExpect(status().isBadRequest());
 
